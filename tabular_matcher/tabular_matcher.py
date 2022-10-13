@@ -127,7 +127,7 @@ class TabularMatcher:
                     yield (x_index, y_matches, 1)
 
 
-    def apply_matches(self, index_increment=0):
+    def apply_matches(self, index_increment=0, progress_bar=None):
 
         _x_records = self.x_records
 
@@ -148,6 +148,9 @@ class TabularMatcher:
                                                                     y_matches.keys()))
             _x_records[x_index]['match_score'] = ', '.join(map(lambda x: str(round(x, 2)), 
                                                                 y_matches.values()))
-
+            progress_bar.update(1)
+            
         return _x_records
     
+    def __len__(self):
+        return len(self.__x_records)

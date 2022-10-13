@@ -1,17 +1,18 @@
 from rapidfuzz import fuzz
 
 
-DEFAULT_THRESHOLD = 75.0
-DEFAULT_RAPIDFUZZ_SCORER = 'WRatio'
 SCORER_MODULE = 'fuzz'
 SCORERS_TO_EXCLUDE  = {'partial_ratio_alignment'}
 SCORERS = [attr for attr in dir(fuzz) 
                 if not attr.startswith('_')
                 and attr not in SCORERS_TO_EXCLUDE]
 
+DEFAULT_THRESHOLD = 75.0
+DEFAULT_RAPIDFUZZ_SCORER = 'WRatio'               
+
 
 class MatcherConfig:
-    
+
     def __init__(self, x_columns:list, y_columns:list) -> None:
 
         self.x_columns = x_columns or []
@@ -20,7 +21,6 @@ class MatcherConfig:
         self.columns_to_match = _ColumnsToMatch(self)
         self.threshold_by_column = _ThresholdByColumn(self)
         self.scorer_by_column = _ScorerByColumn(self)
-
         self.columns_to_get = _ColumnsToGet(self)
         self.columns_to_group = _ColumnsToGroup(self)
 
