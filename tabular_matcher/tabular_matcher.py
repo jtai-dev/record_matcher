@@ -2,49 +2,6 @@ from collections import defaultdict
 from .config import MatcherConfig
 
 
-def column_match(x_record:dict, 
-                 y_records:list,
-                 x_column:str,
-                 y_columns:list, 
-                 scorer,
-                 threshold=0):
-
-    scores = [max([scorer(x_record[x_column], 
-                          y_record[y_column], 
-                          score_cutoff=threshold) for y_column in y_columns
-                  ])
-                    for y_record in y_records]
-
-    return [(y_index, score) for y_index, score in enumerate(scores) if score] 
-
-
-def uniqueness(records, column):
-
-    items = {record[column] for record in records if record[column]}
-    return len(items)/len(records) if len(records) > 0 else 0
-
-
-def adjusted_uniqueness(records, columns):
-
-    u = {column: uniqueness(records, column) for column in columns}
-    return {column: value/sum(u.values()) for column, value in u.items() if sum(u.values())}
-
-
-def group_records_by_value(y_records, x_record, columns):
-
-    def _group():
-        column = columns.pop()
-        for y_record in y_records:
-            if y_record[column] == x_record[column]:
-                yield y_record
-
-    if not columns:
-        return y_records
-
-    else:
-        return group_records_by_value(list(_group()), x_record, columns)
-
-
 class TabularMatcher:
 
     MATCH_STATUS = {0: 'unmatched',
@@ -103,6 +60,7 @@ class TabularMatcher:
                                               x_column, 
                                               y_columns, 
                                               scorer=self.config.scorer_by_column[x_column],
+                                              cutoff=self.config.cutoffs_by_column[x_column],
                                               threshold=self.config.threshold_by_column[x_column])
 
                 for y_index, score in y_index_scores:
@@ -127,7 +85,7 @@ class TabularMatcher:
                     yield (x_index, y_matches, 1)
 
 
-    def apply_matches(self, index_increment=0, progress_bar=None):
+    def apply_matches(self, index_increment=0, p_bar=None):
 
         _x_records = self.x_records
 
@@ -135,7 +93,6 @@ class TabularMatcher:
 
             if y_matches and (status==1 or status==3):
                 y_index = next(iter(y_matches))
-
                 for column in self.config.columns_to_get:
 
                     if column in self.config.x_columns:
@@ -146,11 +103,84 @@ class TabularMatcher:
             _x_records[x_index]['match_status'] = TabularMatcher.MATCH_STATUS[status].upper()
             _x_records[x_index]['matched_with_row'] = ', '.join(map(lambda x: str(x + index_increment), 
                                                                     y_matches.keys()))
-            _x_records[x_index]['match_score'] = ', '.join(map(lambda x: str(round(x, 2)), 
-                                                                y_matches.values()))
-            progress_bar.update(1)
-            
+            _x_records[x_index]['match_score'] = ', '.join(map(lambda x: str(x)), y_matches.values()) \
+                                                           if status == 2 else next(iter(y_matches.values()))
+
+            if p_bar:
+                p_bar.update(1)
+
+        dupes = get_duplicates_by_column(_x_records, 'matched_with_row')
+
+        for dupe in dupes:
+            _x_records[dupe]['match_status'] = TabularMatcher.MATCH_STATUS[4].upper()
+
         return _x_records
+
     
     def __len__(self):
         return len(self.__x_records)
+
+
+def column_match(x_record:dict, 
+                 y_records:list,
+                 x_column:str,
+                 y_columns:list, 
+                 scorer,
+                 cutoff=False,
+                 threshold=0):
+
+    scores = [max([scorer(x_record[x_column], 
+                          y_record[y_column], 
+                          score_cutoff=threshold if cutoff else 0) 
+                            for y_column in y_columns
+                  ])
+                    for y_record in y_records]
+
+    return [(y_index, score) for y_index, score in enumerate(scores) if score > 0] 
+
+
+def uniqueness(records, column):
+
+    items = {record[column] for record in records if record[column]}
+    return len(items)/len(records) if len(records) > 0 else 0
+
+
+def adjusted_uniqueness(records, columns):
+
+    u = {column: uniqueness(records, column) for column in columns}
+    return {column: value/sum(u.values()) for column, value in u.items() if sum(u.values())}
+
+
+def group_records_by_value(y_records, x_record, columns):
+
+    def _group():
+        column = columns.pop()
+        for y_record in y_records:
+            if y_record[column] == x_record[column]:
+                yield y_record
+
+    if not columns:
+        return y_records
+
+    else:
+        return group_records_by_value(list(_group()), x_record, columns)
+
+def records_slice(records, *columns):
+
+    return [{column:record[column] for record in records for column in columns}]
+
+
+def get_duplicates_by_column(records, column):
+
+    counter = defaultdict(list)
+
+    for index, record in enumerate(records):
+        counter[record[column]].append(index)
+
+    d = set()
+
+    for _, indices in counter.items():
+        if len(indices) > 1:
+            d = d.union(indices)
+
+    return d

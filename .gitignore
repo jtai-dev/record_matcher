@@ -131,4 +131,5 @@ dmypy.json
 # Custom
 main.py
 *.ods
-/.DS_Store
+*.DS_Store
+.DS_Store

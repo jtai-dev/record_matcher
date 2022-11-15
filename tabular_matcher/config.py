@@ -8,6 +8,7 @@ SCORERS = [attr for attr in dir(fuzz)
                 and attr not in SCORERS_TO_EXCLUDE]
 
 DEFAULT_THRESHOLD = 75.0
+DEFAULT_CUTOFF = False
 DEFAULT_RAPIDFUZZ_SCORER = 'WRatio'               
 
 
@@ -20,6 +21,7 @@ class MatcherConfig:
 
         self.columns_to_match = _ColumnsToMatch(self)
         self.threshold_by_column = _ThresholdByColumn(self)
+        self.cutoffs_by_column = _CutoffsByColumn(self)
         self.scorer_by_column = _ScorerByColumn(self)
         self.columns_to_get = _ColumnsToGet(self)
         self.columns_to_group = _ColumnsToGroup(self)
@@ -30,6 +32,7 @@ class MatcherConfig:
 
         self.columns_to_match.clear()
         self.threshold_by_column.clear()
+        self.cutoffs_by_column.clear()
         self.scorer_by_column.clear()
         self.columns_to_get.clear()
         self.columns_to_group.clear()
@@ -56,6 +59,7 @@ class _ColumnsToMatch(dict):
             if x_column not in self.keys():
                 self[x_column] = []
                 self.__config.threshold_by_column.add(x_column)
+                self.__config.cutoffs_by_column.add(x_column)
                 self.__config.scorer_by_column.add(x_column)
 
             if y_columns:
@@ -99,6 +103,34 @@ class _ThresholdByColumn(dict):
                 self[x_column] = DEFAULT_THRESHOLD
                 return True
 
+        return False
+
+    def remove(self, x_column):
+        if x_column in self.keys():
+            del self[x_column]
+
+
+class _CutoffsByColumn(dict):
+    def __init__(self, config:MatcherConfig):
+        self.__config = config
+
+    def add(self, x_column, status=None):
+        
+        if x_column in self.__config.x_columns:
+            if status != None:
+                self[x_column] = status
+            else:
+                self[x_column] = DEFAULT_CUTOFF
+            return True
+        
+        return False
+
+    def toggle(self, x_column):
+
+        if x_column in self.keys:
+            self[x_column] = not(self[x_column])
+            return True
+        
         return False
 
     def remove(self, x_column):
