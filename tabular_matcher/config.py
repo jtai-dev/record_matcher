@@ -48,6 +48,7 @@ class MatcherConfig:
 
 
 class _ColumnsToMatch(dict):
+
     def __init__(self, config:MatcherConfig):
 
         self.__config = config
@@ -111,6 +112,7 @@ class _ThresholdByColumn(dict):
 
 
 class _CutoffsByColumn(dict):
+
     def __init__(self, config:MatcherConfig):
         self.__config = config
 
@@ -162,6 +164,7 @@ class _ScorerByColumn(dict):
 
 
 class _ColumnsToGet(list):
+
     def __init__(self, config:MatcherConfig):
         self.__config = config
 
@@ -172,6 +175,7 @@ class _ColumnsToGet(list):
 
 
 class _ColumnsToGroup(list):
+    
     def __init__(self, config:MatcherConfig):
         self.__config = config
 

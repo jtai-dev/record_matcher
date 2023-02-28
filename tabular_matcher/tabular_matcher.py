@@ -1,3 +1,4 @@
+
 from collections import defaultdict
 from .config import MatcherConfig
 
@@ -45,12 +46,16 @@ class TabularMatcher:
     def match(self):
         
         for x_index, x_record in enumerate(self.__x_records):
-
+            
+            # only match the column in x that is not just a blank space and also exist in columns_to_match
             x_columns_to_match = [k for k, v in x_record.items() if k in self.config.columns_to_match.keys() 
                                                                     and str(v).strip()]
+            # gets the variability score (uniqueness) for each column, the more distinguish the values, the higher the variability score                                                                    
             u = adjusted_uniqueness(self.__y_records, x_columns_to_match)
-            grouped_y_records = group_records_by_value(self.__y_records, x_record, self.config.columns_to_group)
-
+            # narrow down the list of y_records containing certain column values that exists in the current x_record
+            grouped_y_records = group_records_by_value(enumerate(self.__y_records), x_record, self.config.columns_to_group)
+            
+            # this counters tracks the total scores for each y_record by summing up matched column scores
             y_score_counter = defaultdict(float)
 
             for x_column, y_columns in self.config.columns_to_match.items():
@@ -64,23 +69,27 @@ class TabularMatcher:
                                               threshold=self.config.threshold_by_column[x_column])
 
                 for y_index, score in y_index_scores:
-                    y_score_counter[y_index] += u[x_column] * score if x_column in u.keys() else 0
+                    y_score_counter[y_index] += score * u[x_column] if x_column in u.keys() else 0
 
+            # only get the best y_record match and matches that passes the total required threshold
             y_matches = {k: v for k, v in y_score_counter.items() if v == max(y_score_counter.values()) 
                                                                   and v >= self.config.total_required_threshold}
 
+            # will be marked as 'unmatched' if there are no matches
             if not y_matches:
                 yield (x_index, y_matches, 0)
 
+            # will be marked as 'ambiguous' if there are more than one matches
             elif len(y_matches) > 1:
                 yield (x_index, y_matches, 2)
 
             else:
                 optimal_threshold = sum([self.config.threshold_by_column[column] * u[column] for column in x_columns_to_match])
                 i = next(iter(y_matches))
-                    
+                # marked as 'review' if it does not meet the optimized threshold
                 if y_matches[i] <= optimal_threshold:
                     yield (x_index, y_matches, 3)
+                # marked as 'matched' if it is the only match and higher than the optimized threshold
                 else:
                     yield (x_index, y_matches, 1)
 
@@ -127,19 +136,29 @@ def column_match(x_record:dict,
                  y_columns:list, 
                  scorer,
                  cutoff=False,
-                 threshold=0):
+                 threshold=0,
+                 enum=False):
 
-    scores = [max([scorer(x_record[x_column], 
-                          y_record[y_column], 
-                          score_cutoff=threshold if cutoff else 0) 
-                            for y_column in y_columns
-                  ])
-                    for y_record in y_records]
+    # scores contains the matching score for x_record column that is matched with each y_record columns;
+    # the maximum matching score out of all the columns 
+    if enum:
+        scores = [max([scorer(x_record[x_column], 
+                              y_record[y_column], 
+                              score_cutoff=threshold if cutoff else 0) 
+                                    for y_column in y_columns])
+                        for y_index, y_record in enumerate(y_records)]
+    
+    else:
+        scores = [max([scorer(x_record[x_column], 
+                              y_record[y_column], 
+                              score_cutoff=threshold if cutoff else 0) 
+                                    for y_column in y_columns])
+                        for y_index, y_record in y_records]       
 
-    return [(y_index, score) for y_index, score in enumerate(scores) if score > 0] 
+    return [(y_index, score) for y_index, score in scores if score > 0] 
 
 
-def uniqueness(records, column):
+def uniqueness(records:list, column):
 
     items = {record[column] for record in records if record[column]}
     return len(items)/len(records) if len(records) > 0 else 0
@@ -151,19 +170,26 @@ def adjusted_uniqueness(records, columns):
     return {column: value/sum(u.values()) for column, value in u.items() if sum(u.values())}
 
 
-def group_records_by_value(y_records, x_record, columns):
+def group_records_by_value(y_records:list, x_record:dict, columns:dict):
+    """
+    y_records: [(0, {column_1: value_1, column_2: value_2})
+                (1, {column_1: value_1, column_2: value_2})
+                ...]
+    """
 
     def _group():
-        column = columns.pop()
-        for y_record in y_records:
-            if y_record[column] == x_record[column]:
-                yield y_record
+        y_column = list(columns.keys()).pop()
+        x_column = columns.pop(y_column)
+        for y_index, y_record in y_records:
+            if y_record[y_column] == x_record[x_column]:
+                yield y_index, y_record
 
     if not columns:
         return y_records
 
     else:
         return group_records_by_value(list(_group()), x_record, columns)
+
 
 def records_slice(records, *columns):
 
