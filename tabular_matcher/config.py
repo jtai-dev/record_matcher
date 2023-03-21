@@ -174,13 +174,25 @@ class _ColumnsToGet(list):
                 self.append(y_column)
 
 
-class _ColumnsToGroup(list):
+class _ColumnsToGroup(dict):
     
     def __init__(self, config:MatcherConfig):
         self.__config = config
 
-    def add(self, *columns):
-        for column in columns:
-            if (column in self.__config.x_columns and
-                column in self.__config.y_columns):
-                    self.append(column)
+    def add(self, y_column, x_column=None):
+        if x_column:
+            if (y_column in self.__config.y_columns and 
+                x_column in self.__config.x_columns):
+                self[y_column] = x_column
+                return True
+        else:
+            if (y_column in self.__config.y_columns and 
+                y_column in self.__config.x_columns):
+                self[y_column] = y_column
+                return True
+            
+        return False
+    
+    def remove(self, y_column):
+        if y_column in self.keys():
+            del self[y_column]
