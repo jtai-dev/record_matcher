@@ -1,2 +1,2 @@
-from .tabular_matcher import *
+from .matcher import *
 from .config import *
