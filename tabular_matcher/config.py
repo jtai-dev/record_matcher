@@ -115,7 +115,7 @@ class ColumnsToGroup(dict):
 
 class ScorersByColumn(dict):
 
-    SCORERS = {'exact_match': lambda x, y: 1.0 if x==y else 0.0}
+    SCORERS = {'exact_match': lambda x, y: 100.0 if x==y else 0.0}
     DEFAULT_SCORER = 'exact_match' 
 
     def __init__(self, config:MatcherConfig):
@@ -126,7 +126,7 @@ class ScorersByColumn(dict):
         if __x in self.config.x_columns:
             if scorer in self.SCORERS:
                 super().__setitem__(__x, self.SCORERS[scorer])
-            else:
+            elif scorer==None:
                 super().__setitem__(__x, self.default)
 
     def __delitem__(self, __x) -> None:
@@ -139,9 +139,12 @@ class ScorersByColumn(dict):
     
     @default.setter
     def default(self, scorer:str):
-        self.__default = lambda x, y: 1.0 if x==y else 0.0
         if scorer in self.SCORERS:
             self.__default = self.SCORERS[scorer]
+        else:
+            if 'exact_match' not in self.SCORERS:
+                self.SCORERS.update({'exact_match': lambda x, y: 100.0 if x==y else 0.0})
+            self.__default = self.SCORERS['exact_match']
 
 
 class ThresholdsByColumn(dict):
@@ -188,7 +191,7 @@ class CutoffsByColumn(dict):
         if __x in self.config.x_columns:
             if isinstance(cutoff, bool):
                 super().__setitem__(__x, cutoff)
-            else:
+            elif cutoff==None:
                 super().__setitem__(__x, self.default)
 
     def __delitem__(self, __x) -> None:

@@ -1,2 +1,3 @@
-from .matcher import *
-from .config import *
+from . import (matcher, 
+               config, 
+               records)

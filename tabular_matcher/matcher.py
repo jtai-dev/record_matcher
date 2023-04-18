@@ -9,7 +9,7 @@ def column_match(x_record: dict[str,str],
                  y_records: dict[int, dict[str,str]],
                  x_column: str,
                  y_columns: list[str], 
-                 scorer: Callable[[str,str],float],
+                 scorer: Callable[[str,str], float],
                  threshold: int|float=0,
                  cutoff: bool=False,
                  ) -> dict[str,int|float]:
@@ -21,25 +21,24 @@ def column_match(x_record: dict[str,str],
         for y_column in y_columns:
             column_scores.append(scorer(str(x_record[x_column]), 
                                         str(y_record[y_column])))
-            
-        row_scores.append((y_index, max(column_scores)))
-
+        row_scores.append((y_index, max(column_scores) if column_scores else 0))
+        
     if cutoff:
-        return ((y_index, score) for y_index, score in row_scores if score >= threshold)
+        return ((y_index, row_score) for y_index, row_score in row_scores if row_score >= threshold)
     
     else:
-        return ((y_index, score) for y_index, score in row_scores if score > 0)
+        return ((y_index, row_score) for y_index, row_score in row_scores if row_score > 0)
 
 
 def records_match(x_records: dict[int, dict[str,str]],
                   y_records: dict[int, dict[str,str]],
-                  columns_to_match: dict[str, set[str]],
+                  columns_to_match: dict[str,set[str]],
                   columns_to_group: dict[str,str],
                   scorers: dict[str, Callable[[str,str], float]],
                   thresholds: dict[str,int|float|complex],
                   cutoffs: dict[str,bool],
                   required_threshold: int|float|complex
-                  ) -> Generator[int, list[tuple[int,float]], float]:
+                  ) -> Generator[int, list[tuple[int, float]], float]:
     
     x_uniqueness = [(c, records.uniqueness(x_records, c)) for c in records.column_names(x_records)]
 
@@ -50,7 +49,7 @@ def records_match(x_records: dict[int, dict[str,str]],
         _u_selected = [(c, u) for c, u in x_uniqueness if c in x_columns_to_match]
         _u_sum = sum(u for _, u in _u_selected)
         _u_adjusted = {c: u/_u_sum for c, u in _u_selected if _u_sum > 0}
-        
+
         y_records_grouped = records.group_by(
                                     y_records,
                                     {y: x_record[x] for y, x in columns_to_group.items()})
@@ -58,19 +57,16 @@ def records_match(x_records: dict[int, dict[str,str]],
         y_records_scores = defaultdict(float)
 
         for x_column, y_columns in columns_to_match.items():
-
-            y_column_score = column_match(x_record,
-                                          y_records_grouped,
-                                          x_column,
-                                          y_columns,
-                                          scorer=scorers[x_column],
-                                          threshold=thresholds[x_column],
-                                          cutoff=cutoffs[x_column]
-                                          )
-
-            for y_index, score in y_column_score:
+            for y_index, score in column_match(x_record, 
+                                               y_records_grouped,
+                                               x_column, 
+                                               y_columns,
+                                               scorer=scorers[x_column],
+                                               threshold=thresholds[x_column],
+                                               cutoff=cutoffs[x_column]
+                                               ):
                 y_records_scores[y_index] += score * (_u_adjusted[x_column] if x_column in _u_adjusted else 0)
-         
+
         y_matches = [(y_index, score) for y_index, score in y_records_scores.items()
                                                 if score == max(y_records_scores.values()) and 
                                                    score >= required_threshold
