@@ -1,5 +1,5 @@
 
-from collections import defaultdict
+from collections import defaultdict, Counter
 from collections.abc import Generator, Callable
 from tabular_matcher import records
 from tabular_matcher.config import MatcherConfig
@@ -133,6 +133,9 @@ class TabularMatcher:
         matched_with_row = self.ADD_COLUMNS['matched_with_row']
         match_score = self.ADD_COLUMNS['match_score']
 
+        y_index_to_x_matches = defaultdict(dict)
+        match_summary = Counter()
+
         for x_index, y_matches, optimal in records_match(
             self.__x_records,
             self.__y_records,
@@ -151,6 +154,8 @@ class TabularMatcher:
                 for column in self.config.columns_to_get:
                     _x_records[x_index][column] = self.__y_records[y_index][column]
 
+                y_index_to_x_matches[y_index].update({x_index: score})
+
             elif len(y_matches) > 1:
                 status = 'ambiguous'
 
@@ -163,10 +168,36 @@ class TabularMatcher:
             _x_records[x_index][match_score] = ', '.join(map(lambda x: str(x[1]) if x else '',
                                                              y_matches))
 
+            match_summary[status] += 1
+
             if p_bar:
                 p_bar()
 
-        for record in records.duplicated(_x_records, matched_with_row):
-            record[match_status] = self.MATCH_STATUS['duplicate']
 
-        return _x_records
+        for x_matches in y_index_to_x_matches.values():
+
+            if len(x_matches) > 1:
+                max_score = max(x_matches.values())
+                min_score = min(x_matches.values())
+
+                check = [x_index for x_index, score in x_matches.items() if score == max_score]
+
+                if len(check) > 1 or (max_score - min_score < self.config.duplicate_threshold):
+                    for x_index in x_matches:
+                        _x_records[x_index][match_status] = self.MATCH_STATUS['duplicate']
+                        match_summary['duplicate'] += 1 
+        
+                else:
+                    for x_index, score in x_matches.items():
+
+                        if score != max_score:
+
+                            for column in self.config.columns_to_get:
+                                _x_records[x_index][column] = None
+
+                            _x_records[x_index][match_status] = self.MATCH_STATUS['unmatched']
+                            _x_records[x_index][match_score] = ''
+                            _x_records[x_index][matched_with_row] = ''
+                            match_summary['unmatched'] += 1 
+
+        return _x_records, match_summary

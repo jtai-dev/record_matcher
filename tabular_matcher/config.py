@@ -3,6 +3,7 @@
 class MatcherConfig:
 
     REQUIRED_THRESHOLD = 75
+    DUPLICATE_THRESHOLD = 3
 
     def __init__(self, x_records:dict[int,dict[str,str]], y_records:dict[int,dict[str,str]]) -> None:
 
@@ -18,6 +19,7 @@ class MatcherConfig:
         self.cutoffs_by_column = CutoffsByColumn(self)
 
         self.required_threshold = self.REQUIRED_THRESHOLD
+        self.duplicate_threshold = self.DUPLICATE_THRESHOLD
 
     @staticmethod
     def column_names(records:dict[int,dict[str,str]]):
