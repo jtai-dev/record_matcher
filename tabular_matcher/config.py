@@ -7,9 +7,6 @@ class MatcherConfig:
 
     def __init__(self, x_records:dict[int,dict[str,str]], y_records:dict[int,dict[str,str]]) -> None:
 
-        self.x_records = x_records
-        self.y_records = y_records
-        
         self.columns_to_match = ColumnsToMatch(self)
         self.columns_to_get = ColumnsToGet(self)
         self.columns_to_group = ColumnsToGroup(self)
@@ -18,8 +15,8 @@ class MatcherConfig:
         self.thresholds_by_column = ThresholdsByColumn(self)
         self.cutoffs_by_column = CutoffsByColumn(self)
 
-        self.required_threshold = self.REQUIRED_THRESHOLD
-        self.duplicate_threshold = self.DUPLICATE_THRESHOLD
+        self.x_records = x_records
+        self.y_records = y_records
 
     @staticmethod
     def column_names(records:dict[int,dict[str,str]]):
@@ -32,6 +29,7 @@ class MatcherConfig:
     @x_records.setter
     def x_records(self, records:dict[int,dict[str,str]]):
         self.__x_columns = self.column_names(records)
+        self.reset()
 
     @property
     def y_records(self):
@@ -40,6 +38,7 @@ class MatcherConfig:
     @y_records.setter
     def y_records(self, records:dict[int,dict[str,str]]):
         self.__y_columns = self.column_names(records)
+        self.reset()
 
     @property
     def x_columns(self):
@@ -56,6 +55,9 @@ class MatcherConfig:
         self.scorers_by_column.clear()
         self.thresholds_by_column.clear()
         self.cutoffs_by_column.clear()
+
+        self.required_threshold = self.REQUIRED_THRESHOLD
+        self.duplicate_threshold = self.DUPLICATE_THRESHOLD
 
     def populate(self):
         for column in self.__x_columns.intersection(self.__y_columns):

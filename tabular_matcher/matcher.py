@@ -164,6 +164,7 @@ class TabularMatcher:
     @x_records.setter
     def x_records(self, x_records: dict[int, dict[str,str]]):
         self.__x_records = x_records
+        self.__config.x_records = x_records
 
     @property
     def y_records(self) -> dict[int, dict[str,str]]:
@@ -172,6 +173,7 @@ class TabularMatcher:
     @y_records.setter
     def y_records(self, y_records: dict[int, dict[str,str]]):
         self.__y_records = y_records
+        self.__config.y_records = y_records
 
     @property
     def config(self):
