@@ -12,17 +12,75 @@ def column_match(x_record: dict[str,str],
                  scorer: Callable[[str,str], float],
                  threshold: int|float=0,
                  cutoff: bool=False,
-                 ) -> dict[str,int|float]:
+                 ) -> Generator[tuple[str, int|float]]:
     
+    """Finds matching records from y_records that matches the x_record column.
+
+    The results of matching records will depend on the scorer that is used.
+    For example, an exact matching scorer will only return matching records 
+    that has an  exact string match, in other words, a 100 percent complete 
+    string match. If the column of x_record is compared with multiple columns 
+    of the y_record, the y_record column with the highest matching score when 
+    compared with a x_record column will be taken. The function performs
+    a final check to see if cutoffs==True, if so, scores that exceeds the 
+    given threshold is considered a potential match, otherwise it defaults to
+    returning anything that is greater than 0.
+
+    
+    Parameters
+    ----------
+    x_record: dict[str, str]
+        A single dictionary record that is to be compared to.
+    
+    y_records: dict[int, dict[str,str]]
+        A dictionary containing multiple dictionary records that is 
+        to be compared with.
+    
+    x_column: str
+        Name of key that exist in x_record in which the value is to be 
+        compared.
+
+    y_columns: list
+        List of key(s) that exist in y_records in which the value is to be 
+        compared.
+    
+    scorer: Callable[[str, str], float]
+        A callable object that takes in two parameters x and y and returns
+        a float showing the similarity of x and y.
+
+    threshold: int|float, default=0
+        A number that determines what is the minimum required matching score
+        in order to be considered a match. Only applies if cutoffs is set to True.
+
+    cutoff: bool, default=False
+        If set to True, threshold will be enforced, otherwise matching records will
+        be any matching score that exceeds 0.
+
+
+    Returns
+    -------
+    Generator[tuple[str, int|float]]
+        A iterator of tuples containing the y_index and the matching scores of the matched
+        y_record.
+    """
+
+    # To contain all the indices and matching score of y_records to be compared later,
+    # this although is a slightly slower approach, has better readibility than yielding 
+    # from multiple if statements
     row_scores = []
 
     for y_index, y_record in y_records.items():
         column_scores = []
         for y_column in y_columns:
-            column_scores.append(scorer(str(x_record[x_column]), 
-                                        str(y_record[y_column])))
+            # To prevent from having an error if the x_column or y_column do not exist in 
+            # x_record or y_record respectively
+            column_scores.append(scorer(str(x_record[x_column] if x_column in x_record else ''), 
+                                        str(y_record[y_column] if y_column in y_record else '')))
+        # column_scores might be empty so having score to 0 means not matches
         row_scores.append((y_index, max(column_scores) if column_scores else 0))
-        
+    
+    # Returning as iterators will free up memory and since this function is not intended to
+    # be an end in itself
     if cutoff:
         return ((y_index, row_score) for y_index, row_score in row_scores if row_score >= threshold)
     
