@@ -1,8 +1,9 @@
 
 from collections import defaultdict, Counter
 from collections.abc import Generator, Callable
-from tabular_matcher import records
-from tabular_matcher.config import MatcherConfig
+
+from . import records
+from .config import MatcherConfig
 
 
 def column_match(x_record: dict[str,str], 

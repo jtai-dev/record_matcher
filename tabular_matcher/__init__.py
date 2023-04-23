@@ -1,3 +1,3 @@
-from . import (matcher, 
-               config, 
-               records)
+__all__ = ['config', 
+           'matcher', 
+           'records']
