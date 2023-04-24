@@ -15,17 +15,19 @@ def column_match(x_record: dict[str,str],
                  cutoff: bool=False,
                  ) -> Generator[tuple[str, int|float]]:
     
-    """Finds matching records from y_records that matches the x_record column.
+    """Finds matching records from y_records that matches the x_record
+       column.
 
-    The results of matching records will depend on the scorer that is used.
-    For example, an exact matching scorer will only return matching records 
-    that has an exact string match, in other words, a 100 percent complete 
-    string match. If the column of x_record is compared with multiple columns 
-    of the y_record, the y_record column with the highest matching score when 
-    compared with a x_record column will be taken. The function performs
-    a final check to see if cutoffs==True, if so, scores that exceeds the 
-    given threshold is considered a potential match, otherwise it defaults to
-    returning anything that is greater than 0.
+    The results of matching records will depend on the scorer that is 
+    used. For example, an exact matching scorer will only return 
+    matching records that has an exact string match, in other words, a 
+    100 percent complete string match. If the column of x_record is 
+    compared with multiple columns of the y_record, the y_record column 
+    with the highest matching score when compared with a x_record column
+    will be taken. The function performs a final check to see if 
+    cutoffs==True, if so, scores that exceeds the given threshold is 
+    considered a potential match, otherwise it defaults to returning 
+    anything that is greater than 0.
 
     
     Parameters
@@ -34,53 +36,57 @@ def column_match(x_record: dict[str,str],
         A single dictionary record that is to be compared to.
     
     y_records: dict[int, dict[str,str]]
-        A dictionary containing multiple dictionary records that are to be 
-        compared with.
+        A dictionary containing multiple dictionary records that are to 
+        be compared with.
     
     x_column: str
         Name of key that exist in x_record in which the value is to be 
         compared.
 
     y_columns: list
-        List of key(s) that exist in y_records in which the value is to be 
-        compared.
+        List of key(s) that exist in y_records in which the value is to 
+        be compared.
     
     scorer: Callable[[str, str], float]
-        A callable object that takes in two parameters x and y and returns
-        a float showing the similarity of x and y.
+        A callable object that takes in two parameters x and y and 
+        returns a float showing the similarity of x and y.
 
     threshold: int|float, default=0
-        A number that determines what is the minimum required matching score
-        in order to be considered a match. Only applies if cutoffs is set to True.
+        A number that determines what is the minimum required matching 
+        score in order to be considered a match. Only applies if cutoffs 
+        is set to True.
 
     cutoff: bool, default=False
-        If set to True, threshold will be enforced, otherwise matching records will
-        be any matching score that exceeds 0.
+        If set to True, threshold will be enforced, otherwise matching 
+        records will be any matching score that exceeds 0.
 
 
     Returns
     -------
     Generator[tuple[str, int|float]]
-        An iterator of tuples containing the y_index and the matching scores of the matched
-        y_record.
+        An iterator of tuples containing the y_index and the matching 
+        scores of the matched y_record.
     """
 
-    # To contain all the indices and matching score of y_records to be compared later,
-    # this although is a slightly slower approach, has better readibility than yielding 
-    # from multiple if statements
+    ## To contain all the indices and matching score of y_records to be 
+    ## compared later, this although is a slightly slower approach, has 
+    ## better readibility than yielding from multiple if statements
     row_scores = []
 
     for y_index, y_record in y_records.items():
         column_scores = []
         for y_column in y_columns:
-            # To prevent from having an error if the x_column or y_column do not exist in 
-            # x_record or y_record respectively
+            ## To prevent from having an error if the x_column or 
+            ## y_column do not exist in  x_record or y_record 
+            ## respectively
             column_scores.append(scorer(str(x_record[x_column] if x_column in x_record else ''), 
                                         str(y_record[y_column] if y_column in y_record else '')))
-        # column_scores might be empty so having score to 0 means no matches
+        ## column_scores might be empty so having score to 0 means no 
+        ## matches
         row_scores.append((y_index, max(column_scores) if column_scores else 0))
     
-    # Returning as iterators so other functions can further process each individual match
+    ## Returning as iterators so other functions can further process 
+    ## each individual match
     if cutoff:
         return ((y_index, row_score) for y_index, row_score in row_scores if row_score >= threshold)
     
@@ -98,62 +104,67 @@ def records_match(x_records: dict[int, dict[str,str]],
                   required_threshold: int|float|complex
                   ) -> Generator[int, list[tuple[int, float]], float]:
     
-    """Finds matching records from y_records that matches all records in x_records
+    """Finds matching records from y_records that matches all records in
+       x_records
 
-    This is the core algorithm that tabular matcher uses. While the column_match 
-    function calculates  the score for a single column in x_record, this function 
-    iterates through each column in x_record and compute the total column score. It 
-    also considers and determines a few more factors such as:
+    This is the core algorithm that tabular matcher uses. While the 
+    column_match function calculates  the score for a single column in 
+    x_record, this function iterates through each column in x_record and 
+    compute the total column score. It also considers and determines a 
+    few more factors such as:
 
           i) the number of unique values in each colum
-         ii) the y_records that are to be grouped by the column value that matches
-             the value in the x_record column
-        iii) whether the total computed score passes the desired threshold 
-             set by the user
+         ii) the y_records that are to be grouped by the column value 
+             that matches the value in the x_record column
+        iii) whether the total computed score passes the desired 
+             threshold set by the user
 
-    The return results is determined by the factors above, it consist of matched 
-    y_record(s) and is mapped to each index of the x_record along with the optimal 
-    threshold.
+    The return results is determined by the factors above, it consist of 
+    matched y_record(s) and is mapped to each index of the x_record along 
+    with the optimal threshold.
 
 
     Parameters
     ----------
     x_records: dict[int, dict[str,str]]
-        A dictionary containing dictionaries (records) that are to be compared to.
+        A dictionary containing dictionaries (records) that are to be 
+        compared to.
 
     y_records: dict[int, dict[str,str]]
-        A dictionary containing dictionaries (records) that are to be compared with.
+        A dictionary containing dictionaries (records) that are to be 
+        compared with.
 
     columns_to_match: dict[str,set[str]]
-        Maps the columns in all x_records that are to be match with the columns 
-        in all y_records One column in x_record may be matched with multiple columns 
-        in a y_record.
+        Maps the columns in all x_records that are to be match with the 
+        columns  in all y_records One column in x_record may be matched 
+        with multiple columns in a y_record.
 
         eg. {x_column_1: {y_column_1, y_column_2}, 
              x_column_2: {y_column_3, y_column_4}}
 
     columns_to_group: dict[str,str]
-        Maps the columns in all y_records that can be grouped by its value found in 
-        the column of a x_record. Uses the group_by function in records.py.
+        Maps the columns in all y_records that can be grouped by its 
+        value found in the column of a x_record. Uses the group_by 
+        function in records.py.
     
         eg. {y_column_1: x_column_1, y_column_2: x_column_2}
 
     scorers: dict[str, Callable[[str,str], float]]
-        Maps the columns in all x_records to a scorer (see column_match scorer param 
-        description).
+        Maps the columns in all x_records to a scorer (see column_match 
+        scorer param description).
 
     thresholds: dict[str,int|float|complex]
-        Maps the columns in all x_records to a number that represent threshold (see 
-        column_match threshold param description).
+        Maps the columns in all x_records to a number that represent 
+        threshold (see column_match threshold param description).
 
     cutoffs: dict[str,bool]
-        Maps the columns in all x_records to a boolean that  if the selected column
-        will need to pass a threshold in order to be considered a match (see 
-        column_match cutoff param description).
+        Maps the columns in all x_records to a boolean that  if the 
+        selected column will need to pass a threshold in order to be 
+        considered a match (see column_match cutoff param description).
 
     required_threshold: int, float
-        A number that determines what is the minimum required total column score in 
-        order to be considered a match.
+        A number that determines what is the minimum required total 
+        column score in order to be considered a match.
 
         
     Yields
@@ -162,33 +173,36 @@ def records_match(x_records: dict[int, dict[str,str]],
         The index of the x_record being matched to.
 
     y_matches: list[tuple[int, float]]
-        A list of matches (if any) containing the y_index and the matching score.
+        A list of matches (if any) containing the y_index and the 
+        matching score.
 
     optimal_threshold: float
-        A number that represents what is the score to acquire in order to be 
-        considered an optimal match as determined by the product of thresholds and 
-        column uniqueness.
+        A number that represents what is the score to acquire in order 
+        to be considered an optimal match as determined by the product 
+        of thresholds and column uniqueness.
     """
 
 
-    # Referenced outside the loop since the number of unique values within a column is fixed
+    ## Referenced outside the loop since the number of unique values
+    ## within a column is fixed
     x_uniqueness = [(c, records.uniqueness(x_records, c)) for c in records.column_names(x_records)]
 
     for x_index, x_record in x_records.items():
 
-        # Columns in x_record that are to be matched are further determined by the availability and
-        # if it is not empty
+        ## Columns in x_record that are to be matched are further 
+        ## determined by the availability and if it is not empty
         x_columns_to_match = {c for c, v in x_record.items() if c in columns_to_match and v}
 
-        # Uniqueness is further adjusted that suits the columns that are to be matched, the 
-        # sum of denominator should always adds up to 100, such that if the y_record is identical
-        # to the x_record, it should return 100 as the matching score
+        ## Uniqueness is further adjusted that suits the columns that 
+        ## are to be matched, the sum of denominator should always adds 
+        ## up to 100, such that if the y_record is identical to the 
+        ## x_record, it should return 100 as the matching score
         _u_selected = [(c, u) for c, u in x_uniqueness if c in x_columns_to_match]
         _u_sum = sum(u for _, u in _u_selected)
         _u_adjusted = {c: u/_u_sum for c, u in _u_selected if _u_sum > 0}
 
 
-        # If no columns to grouped, it will just return all y_records
+        ## If no columns to grouped, it will just return all y_records
         y_records_grouped = records.group_by(
                                     y_records,
                                     {y: x_record[x] for y, x in columns_to_group.items()})
@@ -204,22 +218,71 @@ def records_match(x_records: dict[int, dict[str,str]],
                                                threshold=thresholds[x_column],
                                                cutoff=cutoffs[x_column]
                                                ):
-                # The score will be zero if the values in the column is empty
-                y_records_scores[y_index] += score * (_u_adjusted[x_column] if x_column in _u_adjusted else 0)
+                ## The score will be zero if the values in the column is 
+                ## empty
+                y_records_scores[y_index] += score * (_u_adjusted[x_column] if x_column 
+                                                      in _u_adjusted else 0)
 
-        # Maximum score is checked so that it reduces the ambiguity of y_records matched
+        ## Maximum score is checked so that it reduces the ambiguity 
+        ## of y_records matched
         y_matches = [(y_index, score) for y_index, score in y_records_scores.items()
                                                 if score == max(y_records_scores.values()) and 
                                                    score >= required_threshold
                     ]
 
-        optimal_threshold = sum(thresholds[x_column] * (_u_adjusted[x_column] if x_column in _u_adjusted else 0)
+        optimal_threshold = sum(thresholds[x_column] * (_u_adjusted[x_column] if x_column 
+                                                        in _u_adjusted else 0)
                                 for x_column in x_columns_to_match)
    
         yield x_index, y_matches, optimal_threshold
 
 
 class TabularMatcher:
+    
+    """Applies the semantics of the record_match results using a 
+       customized configuration
+    
+    This class combines semantics application of the match and accepts 
+    user customizable configurations. The semantics (match status) is 
+    paired with a value that is customizable to fit the  audience 
+    understanding of the match results. Additional columns will be added 
+    as an extra key to the records, and it is customizableto prevent key 
+    overwrite. 
+
+
+    Attributes
+    ----------
+
+    MATCH_STATUS: dict
+        This is name-value pair of the semantics of the match results 
+        where the value is customizable to fit the audience 
+        understanding.
+
+    ADD_COLUMNS: dict
+        This is name-value pair of the columns where the value is going 
+        to be a added as a key to the records.
+
+    x_records: dict[int, dict[str,str]]
+        A dictionary containing dictionaries (records) that are to be 
+        compared to.
+
+    y_records: dict[int, dict[str,str]]
+        A dictionary containing dictionaries (records) that are to be 
+        compared with.
+    
+    config: config.MatcherConfig
+        A class that encompasses all the configurable objects that 
+        determines the match results.
+
+
+    Methods
+    -------
+    match(p_bar=None)
+        Performs the match using record_match function and apply the 
+        configured semantics. Checks for duplicates after the match as 
+        well.
+
+    """
 
     MATCH_STATUS = {'unmatched': 'UNMATCHED',
                     'matched': 'MATCHED',
@@ -236,40 +299,77 @@ class TabularMatcher:
                  y_records: dict[int, dict[str,str]], 
                  config: MatcherConfig) -> None:
 
+        """
+        Parameters
+        ----------
+        x_records: dict[int, dict[str,str]]
+            A dictionary containing dictionaries (records) that are to 
+            be compared to.
+
+        y_records: dict[int, dict[str,str]]
+            A dictionary containing dictionaries (records) that are to 
+            be compared with.
+        
+        config: config.MatcherConfig
+            A class that encompasses all the configurable objects that 
+            determines the match results
+        """
+
         self.x_records = x_records
         self.y_records = y_records
         self.__config = config
 
     @property
     def x_records(self) -> dict[int, dict[str,str]]:
+        """Returns a copy of the initiated x_records """
         return self.__x_records.copy()
     
     @x_records.setter
     def x_records(self, x_records: dict[int, dict[str,str]]):
+        """Sets the x_records and changes x_records for config"""
         self.__x_records = x_records
         self.__config.x_records = x_records
 
     @property
     def y_records(self) -> dict[int, dict[str,str]]:
+        """Returns a copy of the initiated y_records """
         return self.__y_records.copy()
     
     @y_records.setter
     def y_records(self, y_records: dict[int, dict[str,str]]):
+        """Sets the y_records and changes y_records for config"""
         self.__y_records = y_records
         self.__config.y_records = y_records
 
     @property
     def config(self):
+        """Returns the config class"""
         return self.__config
     
     @config.setter
     def config(self, config: MatcherConfig):
+        """Sets the config class and verifies the columns"""
         if (config.x_columns == self.__config.x_columns and
             config.y_columns == self.__config.y_columns):
             self.__config = config
 
     def match(self, p_bar: Callable=None):
+        
+        """
+        Performs the match using record_match function and apply the 
+        configured semantics. Checks for duplicates after all 
+        record_match is applied.
+        
+        Parameters
+        ----------
+        p_bar: Callable
+            This is intended to be a progress bar, it can also be any 
+            callable to track the progress of the match
 
+        """
+
+        ## Gets a copy of the x_records to prevent the mutation of the 
+        ## original x_records
         _x_records = self.x_records
 
         match_status = self.ADD_COLUMNS['match_status']
@@ -291,12 +391,16 @@ class TabularMatcher:
         ):
             
             if len(y_matches) == 1:
+                ## This should not have error since the length is first 
+                ## checked
                 y_index, score = next(iter(y_matches))
                 status = 'review' if score <= optimal else 'matched'
 
                 for column in self.config.columns_to_get:
                     _x_records[x_index][column] = self.__y_records[y_index][column]
 
+                ## This map y_index to the x_index used for checking 
+                ## duplicates later
                 y_index_to_x_matches[y_index].update({x_index: score})
 
             elif len(y_matches) > 1:
@@ -306,31 +410,41 @@ class TabularMatcher:
                 status = 'unmatched'
 
             _x_records[x_index][match_status] = self.MATCH_STATUS[status]
+            ## String and concatenate the y indices 
             _x_records[x_index][matched_with_row] = ', '.join(map(lambda x: str(x[0]) if x else '',
                                                                   y_matches))
+            ## String and concatenate the match scores
             _x_records[x_index][match_score] = ', '.join(map(lambda x: str(x[1]) if x else '',
                                                              y_matches))
 
             match_summary[status] += 1
 
-            if p_bar:
+            if callable(p_bar):
                 p_bar()
 
 
         for x_matches in y_index_to_x_matches.values():
 
             if len(x_matches) > 1:
+                ## The distance between the highest and lowest score 
+                ## can be used to determine whether it should be 
+                ## considered as duplicate
                 max_score = max(x_matches.values())
                 min_score = min(x_matches.values())
 
+                ## The presence of more than one max scores will rule 
+                ## all matches as duplicates
                 check = [x_index for x_index, score in x_matches.items() if score == max_score]
 
-                if len(check) > 1 or (max_score - min_score < self.config.duplicate_threshold):
+                if len(check) > 1 or (abs(max_score - min_score) < self.config.duplicate_threshold):
                     for x_index in x_matches:
                         _x_records[x_index][match_status] = self.MATCH_STATUS['duplicate']
                         match_summary['duplicate'] += 1 
         
                 else:
+                    ## This distinguishes the max scores from the min 
+                    ## scores, to reduce  unnecessary duplicates and 
+                    ## marking min scores as unmatched
                     for x_index, score in x_matches.items():
 
                         if score != max_score:
