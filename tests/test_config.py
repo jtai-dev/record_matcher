@@ -127,13 +127,6 @@ def test_cutoffs_by_column_adding_and_removal_of_x_column(test_config:MatcherCon
     assert test_config.cutoffs_by_column == {}
 
 
-def test_threshold_by_column_rejecting_values_outside_of_zero_and_hundred(test_config:MatcherConfig):
-    test_config.thresholds_by_column['b'] = 101
-    assert test_config.thresholds_by_column == {}
-    test_config.thresholds_by_column['b'] = -1
-    assert test_config.thresholds_by_column == {}
-
-
 def test_scorers_by_column_rejecting_scorer_with_no_ref_in_scorers_dict(test_config:MatcherConfig):
     test_config.scorers_by_column.SCORERS.clear()
     test_config.scorers_by_column['b'] = 'i_have_no_ref_scorer'
