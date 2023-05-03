@@ -287,10 +287,9 @@ class TabularMatcher:
 
     Methods
     -------
-    match(p_bar=None)
+    match(update_func=None)
         Performs the match using record_match function and apply the 
-        configured semantics. Checks for duplicates after the match as 
-        well.
+        configured semantics. Checks for duplicates after the match.
 
     """
 
@@ -365,7 +364,7 @@ class TabularMatcher:
             config.y_columns == self.__config.y_columns):
             self.__config = config
 
-    def match(self, p_bar: Callable=None):
+    def match(self, update_func: Callable=None):
         
         """
         Performs the match using record_match function and apply the 
@@ -374,9 +373,8 @@ class TabularMatcher:
         
         Parameters
         ----------
-        p_bar: Callable
-            This is intended to be a progress bar, it can also be any 
-            callable to track the progress of the match
+        update_func: Callable
+            This is a callable to track the progress of the match
 
         """
 
@@ -431,8 +429,8 @@ class TabularMatcher:
 
             match_summary[status] += 1
 
-            if callable(p_bar):
-                p_bar()
+            if callable(update_func):
+                update_func()
 
 
         for x_matches in y_index_to_x_matches.values():
