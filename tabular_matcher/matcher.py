@@ -324,9 +324,10 @@ class TabularMatcher:
             determines the match results
         """
 
-        self.x_records = x_records
-        self.y_records = y_records
+        self.__x_records = x_records
+        self.__y_records = y_records
         self.__config = config
+        
         self.required_threshold = 75.0
         self.duplicate_threshold = 3.0
 

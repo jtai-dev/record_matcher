@@ -339,9 +339,9 @@ class ScorersByColumn(dict):
     
     @default.setter
     def default(self, scorer:str):
-        self.__default = ScorersByColumn.SCORERS[ScorersByColumn.DEFAULT_SCORER]
+        self.__default = ScorersByColumn.DEFAULT_SCORER
         if scorer in ScorersByColumn.SCORERS:
-            self.__default = self.SCORERS[scorer]
+            self.__default = scorer
 
 
 class ThresholdsByColumn(dict):
