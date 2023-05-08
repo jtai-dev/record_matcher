@@ -406,22 +406,25 @@ class TabularMatcher:
                 ## checked
                 y_index, score = next(iter(y_matches))
                 status = 'review' if score <= optimal else 'matched'
-                column_to_get_value = self.__y_records[y_index][y_column]
+
+                for y_column, x_column  in self.config.columns_to_get.items():
+                    _x_records[x_index][x_column] = self.__y_records[y_index][y_column]
 
                 ## This map y_index to the x_index used for checking 
                 ## duplicates later
                 y_index_to_x_matches[y_index].update({x_index: score})
 
             elif len(y_matches) > 1:
-                column_to_get_value = None
                 status = 'ambiguous'
 
+                for y_column, x_column  in self.config.columns_to_get.items():
+                    _x_records[x_index][x_column] = None
+
             else:
-                column_to_get_value = None
                 status = 'unmatched'
 
-            for y_column, x_column  in self.config.columns_to_get.items():
-                _x_records[x_index][x_column] = column_to_get_value
+                for y_column, x_column  in self.config.columns_to_get.items():
+                    _x_records[x_index][x_column] = None
 
             _x_records[x_index][match_status] = self.MATCH_STATUS[status]
             ## String and concatenate the y indices 
