@@ -133,3 +133,4 @@ main.py
 *.ods
 *.DS_Store
 .DS_Store
+tests/test_files

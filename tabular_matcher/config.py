@@ -1,3 +1,4 @@
+from .errors import *
 
 
 class MatcherConfig:
@@ -207,7 +208,7 @@ class ColumnsToGet(dict):
         self.config = config
         self.allow_overwrite = False
 
-    def __setitem__(self, __y:str, __x:str=None):
+    def __setitem__(self, __y:str, __x=None):
         if __y in self.config.y_columns:
             if self.allow_overwrite:
                 ## __x represents the x_column and cannot exist twice
@@ -215,10 +216,16 @@ class ColumnsToGet(dict):
                 ## value.
                 if __x not in self.values():
                     super().__setitem__(__y, __x)
+                else:
+                    raise TBConfigXUniqueConstraint(__x, self.__name__)
             else:
                 if __x not in self.config.x_columns:
                     if __x not in self.values():
                         super().__setitem__(__y, __x)
+                    else:
+                        raise TBConfigXUniqueConstraint(__x, self.__name__)
+                else:
+                    raise TBConfigOverwriteError(__x)
 
 
 class ColumnsToGroup(dict):
@@ -264,7 +271,11 @@ class ColumnsToGroup(dict):
         if __y in self.config.y_columns:
             if __x in self.config.x_columns:
                 super().__setitem__(__y, __x)
-
+            else:
+                raise TBConfigXColumnNotFound(__x, self.config.x_columns)
+        else:
+            raise TBConfigYColumnNotFound(__y, self.config.y_columns)
+        
 
 class ScorersByColumn(dict):
 
@@ -322,17 +333,23 @@ class ScorersByColumn(dict):
         self.config = config
         self.default = self.DEFAULT_SCORER
 
-    def __setitem__(self, __x:str, scorer:str=None) -> None:
+    def __setitem__(self, __x:str, scorer=None) -> None:
         if __x in self.config.x_columns:
             if scorer in ScorersByColumn.SCORERS:
                 super().__setitem__(__x, ScorersByColumn.SCORERS[scorer])
             elif scorer==None:
                 super().__setitem__(__x, ScorersByColumn.SCORERS[self.default])
-
-    def __delitem__(self, __x) -> None:
-        if __x in self and __x not in self.config.columns_to_match:
-            return super().__delitem__(__x)
+            else:
+                raise TBConfigScorerNotFound(scorer, ScorersByColumn.SCORERS.keys())
+        else:
+            raise TBConfigXColumnNotFound(__x, self.config.x_columns)
         
+    def __delitem__(self, __x) -> None:
+        if __x not in self.config.columns_to_match:
+            return super().__delitem__(__x)
+        else:
+            raise TBConfigColumnToMatchLock(__x)
+
     @property
     def default(self):
         return self.__default
@@ -342,6 +359,8 @@ class ScorersByColumn(dict):
         self.__default = ScorersByColumn.DEFAULT_SCORER
         if scorer in ScorersByColumn.SCORERS:
             self.__default = scorer
+        else:
+            raise TBConfigScorerNotFound(scorer, ScorersByColumn.SCORERS.keys())
 
 
 class ThresholdsByColumn(dict):
@@ -394,16 +413,20 @@ class ThresholdsByColumn(dict):
         self.config = config
         self.default = self.DEFAULT_THRESHOLD
 
-    def __setitem__(self, __x, threshold:float=None) -> None:
+    def __setitem__(self, __x, threshold=None) -> None:
         if __x in self.config.x_columns:
             if isinstance(threshold, (int, float)):
                 super().__setitem__(__x, threshold)
-            else:
+            elif threshold==None:
                 super().__setitem__(__x, self.default)
+            else:
+                raise ValueError('Threshold must be a real number.')
 
     def __delitem__(self, __x) -> None:
-        if __x in self and __x not in self.config.columns_to_match:
+        if __x not in self.config.columns_to_match:
             return super().__delitem__(__x)
+        else:
+            raise TBConfigColumnToMatchLock(__x)
         
     @property
     def default(self):
@@ -414,6 +437,8 @@ class ThresholdsByColumn(dict):
         self.__default = ThresholdsByColumn.DEFAULT_THRESHOLD
         if isinstance(threshold, (int, float)):
             self.__default = threshold
+        else:
+            raise ValueError('Threshold must be a real number.')
         
 
 class CutoffsByColumn(dict):
@@ -465,16 +490,20 @@ class CutoffsByColumn(dict):
         self.config = config
         self.default = self.DEFAULT_CUTOFF
 
-    def __setitem__(self, __x, cutoff:bool=None) -> None:
+    def __setitem__(self, __x, cutoff=None) -> None:
         if __x in self.config.x_columns:
             if isinstance(cutoff, bool):
                 super().__setitem__(__x, cutoff)
             elif cutoff==None:
                 super().__setitem__(__x, self.default)
+            else:
+                raise ValueError("Cutoff must be a boolean.")
 
     def __delitem__(self, __x) -> None:
-        if __x in self and __x not in self.config.columns_to_match:
+        if __x not in self.config.columns_to_match:
             return super().__delitem__(__x)
+        else:
+            raise TBConfigColumnToMatchLock(__x)
         
     @property
     def default(self):
@@ -485,3 +514,5 @@ class CutoffsByColumn(dict):
         self.__default = CutoffsByColumn.DEFAULT_CUTOFF
         if isinstance(cutoff, bool):
             self.__default = cutoff
+        else:
+            raise ValueError("Cutoff must be a boolean.")
