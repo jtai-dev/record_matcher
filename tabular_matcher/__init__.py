@@ -1,3 +1,6 @@
-__all__ = ['config', 
-           'matcher', 
-           'records']
+__all__ = [
+    "config",
+    "errors",
+    "matcher",
+    "records",
+]
