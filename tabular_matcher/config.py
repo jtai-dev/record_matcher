@@ -39,7 +39,7 @@ class MatcherConfig:
     """
 
     def __init__(self) -> None:
-        
+
         self.columns_to_get = ColumnsToGet(self)
         self.columns_to_match = ColumnsToMatch(self)
         self.columns_to_group = ColumnsToGroup(self)
@@ -128,15 +128,17 @@ class ColumnsToMatch(dict):
         self.config = config
 
     def __setitem__(self, __x: str, *__y: str) -> None:
-        ## __y will be a tuple no matter how many inputs is given
-        ## Eg:
-        ## self['a'] = 1 -> __y = (1, ); *__y = 1
-        ## self['b'] = 3,4 -> __y = ((3,4),) ; *__y = (3,4)
+        # __y will be a tuple no matter how many inputs is given
+        # Eg:
+        # self['a'] = 1 -> __y = (1, ); *__y = 1
+        # self['b'] = 3,4 -> __y = ((3,4),) ; *__y = (3,4)
 
         if isinstance(next(iter(__y)), tuple):
-            self[__x].update(set(*__y).intersection(self.config.y_columns))
+            self[__x].extend(
+                [y for y in list(*__y) if y in self.config.y_columns and y not in self[__x]])
         else:
-            self[__x].update(set(__y).intersection(self.config.y_columns))
+            self[__x].extend(
+                [y for y in list(__y) if y in self.config.y_columns and y not in self[__x]])
 
         self.config.scorers_by_column[__x] = None
         self.config.thresholds_by_column[__x] = None
@@ -144,8 +146,8 @@ class ColumnsToMatch(dict):
 
     def __missing__(self, __x: str):
         if __x not in self.config.x_columns:
-            return set()
-        super().__setitem__(__x, set())
+            return []
+        super().__setitem__(__x, [])
         return super().__getitem__(__x)
 
     def __delitem__(self, __x: str) -> None:
@@ -205,19 +207,21 @@ class ColumnsToGet(dict):
     def __setitem__(self, __y: str, __x=None):
         if __y in self.config.y_columns:
             if self.allow_overwrite:
-                ## __x represents the x_column and cannot exist twice
-                ## If it exist twice, it will overwrite the preceding
-                ## value.
+                # __x represents the x_column and cannot exist twice
+                # If it exist twice, it will overwrite the preceding
+                # value.
                 if __x not in self.values():
                     super().__setitem__(__y, __x)
                 else:
-                    raise TBConfigXUniqueConstraint(__x, self.__class__.__name__)
+                    raise TBConfigXUniqueConstraint(
+                        __x, self.__class__.__name__)
             else:
                 if __x not in self.config.x_columns:
                     if __x not in self.values():
                         super().__setitem__(__y, __x)
                     else:
-                        raise TBConfigXUniqueConstraint(__x, self.__class__.__name__)
+                        raise TBConfigXUniqueConstraint(
+                            __x, self.__class__.__name__)
                 else:
                     raise TBConfigOverwriteError(__x)
 
@@ -328,14 +332,15 @@ class ScorersByColumn(dict):
     def __setitem__(self, __x: str, scorer_name=None) -> None:
         if __x in self.config.x_columns:
             if scorer_name in ScorersByColumn.SCORERS:
-                super().__setitem__(__x, scorer_name) #type: ignore
+                super().__setitem__(__x, scorer_name)  # type: ignore
             elif scorer_name is None:
                 super().__setitem__(__x, self.default)
             else:
-                raise TBConfigScorerNotFound(scorer_name, ScorersByColumn.SCORERS)
+                raise TBConfigScorerNotFound(
+                    scorer_name, ScorersByColumn.SCORERS)
         else:
             raise TBConfigXColumnNotFound(__x, self.config.x_columns)
-        
+
     def __getitem__(self, __x):
         scorer_name = super().__getitem__(__x)
         return self.SCORERS.get(scorer_name)
@@ -345,7 +350,7 @@ class ScorersByColumn(dict):
             return super().__delitem__(__x)
         else:
             raise TBConfigColumnToMatchLock(__x)
-        
+
     def get(self, __x):
         scorer_name = super().get(__x)
         if scorer_name:
@@ -515,3 +520,16 @@ class CutoffsByColumn(dict):
             self.__default = cutoff
         else:
             raise ValueError("Cutoff must be a boolean.")
+
+
+if __name__ == '__main__':
+    class A(dict):
+        def __missing__(self, __x):
+            super().__setitem__(__x, [])
+            return self[__x]
+
+        def __setitem__(self, __x, *__y):
+            if isinstance(next(iter(__y)), tuple):
+                self[__x].extend([y for y in list(*__y) if y not in self[__x]])
+            else:
+                self[__x].extend([y for y in list(__y) if y not in self[__x]])

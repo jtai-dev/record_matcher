@@ -73,20 +73,29 @@ def column_match(
     row_scores = []
 
     for y_index, y_record in y_records.items():
+
         column_scores = []
         for y_column in y_columns:
-            ## To prevent from having an error if the x_column or
-            ## y_column do not exist in  x_record or y_record
-            ## respectively
+            # To prevent from having an error if the x_column or
+            # y_column do not exist in  x_record or y_record
+            # respectively
             column_scores.append(
                 scorer(
                     str(x_record[x_column] if x_column in x_record else ""),
                     str(y_record[y_column] if y_column in y_record else ""),
                 )
             )
-        ## column_scores might be empty so having score to 0 means no
-        ## matches
+        # column_scores might be empty so having score to 0 means no
+        # matches
         row_scores.append((y_index, max(column_scores) if column_scores else 0))
+
+        # # Combines the strings of y_columns and scores it with string of x_column
+        # column_score = scorer(
+        #             str(x_record[x_column] if x_column in x_record else ""),
+        #             " ".join((str(y_record[y_column]) for y_column in y_columns))
+        #         )
+        # row_scores.append((y_index, column_score))
+        
 
     ## Returning as iterators so other functions can further process
     ## each individual match
