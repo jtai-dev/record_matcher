@@ -16,7 +16,7 @@ with open('requirements.txt') as f:
             install_requires.append(line)
 
 setup_info = {'name':'tabular_matcher',
-              'version': '1.0.0',
+              'version': '0.0.2',
               'description': 'Finds matches between two sets of tabular data',
               'author': 'Johanan Tai',
               'author_email': 'jtai.dvlp@gmail.com',
