@@ -3,8 +3,8 @@ from .errors import *
 
 class MatcherConfig:
 
-    """A class that encapsulates the configurations that pertains to
-    the columns in x_records and y_records.
+    """Contains configurations for both x_records and y_records and
+    allow for auto-population of configurations based on column names.
 
 
     Attributes
@@ -17,7 +17,7 @@ class MatcherConfig:
         Maps columns in x_records (x_column) to the columns in y_records
         (y_column).
 
-    columns_to_get: ColumnsToGet(set)
+    columns_to_get: ColumnsToGet(dict)
         Maps columns in y_records (y_column) to an existing column
         (x_column) or non-existing column in x_records.
 
@@ -39,7 +39,10 @@ class MatcherConfig:
     """
 
     def __init__(self) -> None:
-
+        
+        self.__x_columns = None
+        self.__y_columns = None
+        
         self.columns_to_get = ColumnsToGet(self)
         self.columns_to_match = ColumnsToMatch(self)
         self.columns_to_group = ColumnsToGroup(self)
@@ -48,7 +51,7 @@ class MatcherConfig:
         self.cutoffs_by_column = CutoffsByColumn(self)
 
     @staticmethod
-    def column_names(records: dict[int, dict[str, str]]):
+    def column_names(records: dict[int, dict[str, str]]) -> set:
         return {c for i in records for c in records[i]}
 
     @property
@@ -57,8 +60,14 @@ class MatcherConfig:
 
     @x_records.setter
     def x_records(self, records: dict[int, dict[str, str]]):
-        self.__x_columns = self.column_names(records)
-        self.reset()
+        columns = self.column_names(records)
+        if not self.__x_columns:
+            self.__x_columns = columns
+        elif self.__x_columns != columns:
+            self.__x_columns = columns
+            self.reset()
+        else:
+            pass
 
     @property
     def y_records(self):
@@ -66,15 +75,21 @@ class MatcherConfig:
 
     @y_records.setter
     def y_records(self, records: dict[int, dict[str, str]]):
-        self.__y_columns = self.column_names(records)
-        self.reset()
+        columns = self.column_names(records)
+        if not self.__y_columns:
+            self.__y_columns = columns
+        elif self.__y_columns != columns:
+            self.__y_columns = columns
+            self.reset()
+        else:
+            pass
 
     @property
-    def x_columns(self):
+    def x_columns(self) -> set:
         return self.__x_columns.copy()
 
     @property
-    def y_columns(self):
+    def y_columns(self) -> set:
         return self.__y_columns.copy()
 
     def reset(self):
@@ -104,9 +119,10 @@ class ColumnsToMatch(dict):
        ii) Adds a key to ScorersByColumn, ThresholdsByColumn and
            CutoffsByColumn when a key is added.
 
-    eg. {x_column_1: {y_column_1, y_column_2...},
-         x_column_2: {y_column_3, y_column_4...}
-         ...}
+    eg. {
+        x_column_1: [y_column_1, y_column_2...],
+        x_column_2: [y_column_3, y_column_4...]
+        ...}
 
 
     Attributes
@@ -128,17 +144,42 @@ class ColumnsToMatch(dict):
         self.config = config
 
     def __setitem__(self, __x: str, *__y: str) -> None:
-        # __y will be a tuple no matter how many inputs is given
-        # Eg:
-        # self['a'] = 1 -> __y = (1, ); *__y = 1
-        # self['b'] = 3,4 -> __y = ((3,4),) ; *__y = (3,4)
+        """Maps only key and value pairs that exist in columns of y records.
 
+
+        Parameters
+        ----------
+        __x : str
+            Representing a column in the x_records of the config
+
+        __y : str
+            Representing a column in the y_records of the config
+
+            __y will be a tuple no matter how many inputs is given
+            eg. self['a'] = 1
+                -> __y = (1, );
+                -> *__y = 1
+
+                self['b'] = 3, 4
+                -> __y = ((3,4),);
+                -> *__y = (3,4)
+        """
         if isinstance(next(iter(__y)), tuple):
             self[__x].extend(
-                [y for y in list(*__y) if y in self.config.y_columns and y not in self[__x]])
+                [
+                    y
+                    for y in list(*__y)
+                    if y in self.config.y_columns and y not in self[__x]
+                ]
+            )
         else:
             self[__x].extend(
-                [y for y in list(__y) if y in self.config.y_columns and y not in self[__x]])
+                [
+                    y
+                    for y in list(__y)
+                    if y in self.config.y_columns and y not in self[__x]
+                ]
+            )
 
         self.config.scorers_by_column[__x] = None
         self.config.thresholds_by_column[__x] = None
@@ -152,9 +193,12 @@ class ColumnsToMatch(dict):
 
     def __delitem__(self, __x: str) -> None:
         super().__delitem__(__x)
-        del self.config.scorers_by_column[__x]
-        del self.config.thresholds_by_column[__x]
-        del self.config.cutoffs_by_column[__x]
+        if __x in self.config.scorers_by_column:
+            del self.config.scorers_by_column[__x]
+        if __x in self.config.thresholds_by_column:
+            del self.config.thresholds_by_column[__x]
+        if __x in self.config.cutoffs_by_column:
+            del self.config.cutoffs_by_column[__x]
 
 
 class ColumnsToGet(dict):
@@ -206,22 +250,21 @@ class ColumnsToGet(dict):
 
     def __setitem__(self, __y: str, __x=None):
         if __y in self.config.y_columns:
+            # __x represents the x_column and cannot exist twice
+            # If it exist twice, it will overwrite the preceding
+            # value.
             if self.allow_overwrite:
-                # __x represents the x_column and cannot exist twice
-                # If it exist twice, it will overwrite the preceding
-                # value.
+                
                 if __x not in self.values():
                     super().__setitem__(__y, __x)
                 else:
-                    raise TBConfigXUniqueConstraint(
-                        __x, self.__class__.__name__)
+                    raise TBConfigXUniqueConstraint(__x, self.__class__.__name__)
             else:
                 if __x not in self.config.x_columns:
                     if __x not in self.values():
                         super().__setitem__(__y, __x)
                     else:
-                        raise TBConfigXUniqueConstraint(
-                            __x, self.__class__.__name__)
+                        raise TBConfigXUniqueConstraint(__x, self.__class__.__name__)
                 else:
                     raise TBConfigOverwriteError(__x)
 
@@ -269,9 +312,9 @@ class ColumnsToGroup(dict):
             if __x in self.config.x_columns:
                 super().__setitem__(__y, __x)
             else:
-                raise TBConfigXColumnNotFound(__x, self.config.x_columns)
+                raise TBConfigColumnNotFound(__x, self.config.x_columns)
         else:
-            raise TBConfigYColumnNotFound(__y, self.config.y_columns)
+            raise TBConfigColumnNotFound(__y, self.config.y_columns)
 
 
 class ScorersByColumn(dict):
@@ -336,10 +379,9 @@ class ScorersByColumn(dict):
             elif scorer_name is None:
                 super().__setitem__(__x, self.default)
             else:
-                raise TBConfigScorerNotFound(
-                    scorer_name, ScorersByColumn.SCORERS)
+                raise TBConfigScorerNotFound(scorer_name, ScorersByColumn.SCORERS)
         else:
-            raise TBConfigXColumnNotFound(__x, self.config.x_columns)
+            raise TBConfigColumnNotFound(__x, self.config.x_columns)
 
     def __getitem__(self, __x):
         scorer_name = super().__getitem__(__x)
@@ -520,16 +562,3 @@ class CutoffsByColumn(dict):
             self.__default = cutoff
         else:
             raise ValueError("Cutoff must be a boolean.")
-
-
-if __name__ == '__main__':
-    class A(dict):
-        def __missing__(self, __x):
-            super().__setitem__(__x, [])
-            return self[__x]
-
-        def __setitem__(self, __x, *__y):
-            if isinstance(next(iter(__y)), tuple):
-                self[__x].extend([y for y in list(*__y) if y not in self[__x]])
-            else:
-                self[__x].extend([y for y in list(__y) if y not in self[__x]])

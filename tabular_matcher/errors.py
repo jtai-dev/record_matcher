@@ -1,30 +1,20 @@
-class TBConfigXColumnNotFound(Exception):
-    def __init__(self, column, x_columns):
+class TBConfigColumnNotFound(Exception):
+    def __init__(self, column, columns):
         super().__init__(
-            f"x_column:{column} cannot be found in x_records. Only these "
-            f"x_columns may be used: {', '.join(x_columns)}"
+            f"Column \'{column}\' cannot be found. Only these "
+            f"columns can be used: {', '.join(columns)}"
         )
-
-
-class TBConfigYColumnNotFound(Exception):
-    def __init__(self, column, y_columns):
-        super().__init__(
-            f"y_column:{column} cannot be found in y_records. Only these "
-            f"y_columns may be used: {', '.join(y_columns)}"
-        )
-
 
 class TBConfigXUniqueConstraint(Exception):
-    def __init__(self, column, config_classname) -> None:
+    def __init__(self, column, config_dict) -> None:
         super().__init__(
-            f"x_column:{column} already exists in {config_classname} values."
+            f"Column \'{column}\' already exists in {config_dict} values."
         )
-
 
 class TBConfigOverwriteError(Exception):
     def __init__(self, column):
         super().__init__(
-            f"x_column:{column} is a column in x_records. "
+            f"\'{column}\' already exist. "
             f"Set allow_overwrite==True to allow for overwriting."
         )
 

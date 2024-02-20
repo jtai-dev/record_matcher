@@ -35,8 +35,8 @@ def test_records_uniqueness_by_column():
     expected_uniqueness_of_column_a = 7/8
     expected_uniqueness_of_column_b = 2/8
 
-    assert records.uniqueness(test_data, 'a') == expected_uniqueness_of_column_a
-    assert records.uniqueness(test_data, 'b') == expected_uniqueness_of_column_b
+    assert records.uniqueness_by_column(test_data, 'a') == expected_uniqueness_of_column_a
+    assert records.uniqueness_by_column(test_data, 'b') == expected_uniqueness_of_column_b
 
 
 def test_find_duplicated_records_by_column():
