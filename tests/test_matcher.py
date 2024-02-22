@@ -1,5 +1,5 @@
 import pytest
-from tabular_matcher import matcher
+from record_matcher import matcher
 
 
 @pytest.fixture

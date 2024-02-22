@@ -1,4 +1,4 @@
-from tabular_matcher import records
+from record_matcher import records
 
 
 def test_get_column_names_from_records():

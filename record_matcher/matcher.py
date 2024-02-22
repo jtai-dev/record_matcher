@@ -1,8 +1,8 @@
 from collections import defaultdict, Counter
 from collections.abc import Generator, Callable
 
-from . import records
-from .config import MatcherConfig
+from record_matcher import records
+from record_matcher.config import MatcherConfig
 
 
 def column_match(
@@ -97,7 +97,7 @@ def records_match(
     scorers: dict[str, Callable[[str, str], float]],
     thresholds: dict[str, int | float],
     cutoffs: dict[str, bool],
-) -> tuple[int, list[tuple[int, float]], float]:
+) -> Generator[tuple[int, list[tuple[int, float]], float]]:
     """Finds matching records from y_records that matches all records in
     x_records
 
@@ -162,7 +162,8 @@ def records_match(
 
     # Referenced outside the loop since the number of unique values within a column is fixed
     x_uniqueness = [
-        (c, records.uniqueness_by_column(x_records, c)) for c in records.column_names(x_records)
+        (c, records.uniqueness_by_column(x_records, c))
+        for c in records.column_names(x_records)
     ]
 
     for x_index, x_record in x_records.items():
@@ -215,7 +216,7 @@ def records_match(
         yield x_index, y_matches, optimal_threshold
 
 
-class TabularMatcher:
+class RecordMatcher:
     """Applies the semantics from the results of record_match using a
     customized configuration
 

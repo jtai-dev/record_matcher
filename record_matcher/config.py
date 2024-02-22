@@ -1,8 +1,7 @@
-from .errors import *
+from record_matcher.errors import *
 
 
 class MatcherConfig:
-
     """Contains configurations for both x_records and y_records and
     allow for auto-population of configurations based on column names.
 
@@ -39,10 +38,10 @@ class MatcherConfig:
     """
 
     def __init__(self) -> None:
-        
+
         self.__x_columns = None
         self.__y_columns = None
-        
+
         self.columns_to_get = ColumnsToGet(self)
         self.columns_to_match = ColumnsToMatch(self)
         self.columns_to_group = ColumnsToGroup(self)
@@ -106,7 +105,6 @@ class MatcherConfig:
 
 
 class ColumnsToMatch(dict):
-
     """Maps columns in x_records (x_column) to the columns in y_records
     (y_column).
 
@@ -202,7 +200,6 @@ class ColumnsToMatch(dict):
 
 
 class ColumnsToGet(dict):
-
     """Maps columns in y_records (y_column) to an existing column
     (x_column) or non-existing column in x_records.
 
@@ -254,7 +251,7 @@ class ColumnsToGet(dict):
             # If it exist twice, it will overwrite the preceding
             # value.
             if self.allow_overwrite:
-                
+
                 if __x not in self.values():
                     super().__setitem__(__y, __x)
                 else:
@@ -270,7 +267,6 @@ class ColumnsToGet(dict):
 
 
 class ColumnsToGroup(dict):
-
     """Maps columns in y_records (y_column) to a column in x_records
     (x_column).
 
@@ -318,7 +314,6 @@ class ColumnsToGroup(dict):
 
 
 class ScorersByColumn(dict):
-
     """Maps columns in x_records (x_column) to a scorer.
 
     A scorer is a callable object that takes in two parameters x and y
@@ -412,7 +407,6 @@ class ScorersByColumn(dict):
 
 
 class ThresholdsByColumn(dict):
-
     """Maps columns in x_records (x_column) to a number that represents
     a threshold.
 
@@ -489,7 +483,6 @@ class ThresholdsByColumn(dict):
 
 
 class CutoffsByColumn(dict):
-
     """Maps columns in x_records (x_column) to a boolean value that
     represents the cutoff.
 

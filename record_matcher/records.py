@@ -3,7 +3,7 @@ from collections.abc import Generator
 
 
 """
-This module is the core foundation of record_matcher which is based on
+This module is the core of record_matcher which is based on
 the concept of records. Records are data structures that represents 
 tabular data, where each record is a dictionary mapping column names to
 values. The table is represented as a dictionary, where the keys are row
@@ -68,23 +68,28 @@ def uniqueness_by_column(records: dict[int, dict[str, str]], column: str) -> flo
 
 
 def adjusted_uniqueness(
-    selected_columns, columns_uniqueness=None, records=None
+    selected_columns: list, columns_uniqueness: list = None, records: dict[int, dict[str, str]]=None
 ) -> dict[str, float]:
-    """_summary_
+    """Adjust the uniqueness (frequency ratio) of values according to the columns
+    selected.
 
     Parameters
     ----------
-    selected_columns : _type_
-        _description_
-    columns_uniqueness : _type_, optional
-        _description_, by default None
+    selected_columns : list
+        These will be the columns that will be included in the calculation of the 
+        new uniqueness score.
+    columns_uniqueness : list, optional
+        A list of containing the computed scores for the each column in each record, 
+        the purpose here is to reduce the number of computations when adjusting uniqueness
+        to each an individual row, by default None
     records : _type_, optional
-        _description_, by default None
+        Required when columns_uniqueness is not provided
+        (See module docstring for definition of records), by default None
 
     Returns
     -------
-    _type_
-        _description_
+    dict[str, float]
+        A dictionary containing uniqueness referencing each of the selected columns
     """
     if not columns_uniqueness:
         assert any(records)
@@ -101,19 +106,19 @@ def adjusted_uniqueness(
 def group_by(
     records: dict[int, dict[str, str]], column_map: dict[str, str]
 ) -> dict[int, dict[str, str]]:
-    """_summary_
+    """Group records by values of multiple columns
 
     Parameters
     ----------
     records : dict[int, dict[str, str]]
-        _description_
+        (See module docstring for definition)
     column_map : dict[str, str]
-        _description_
+        A mapping of the columns to the values that the records will be grouped by
 
     Returns
     -------
     dict[int, dict[str, str]]
-        _description_
+        Grouped records
     """
     grouped = {}
 
@@ -130,24 +135,19 @@ def group_by(
 def duplicated_by_column(
     records: dict[int, dict[str, str]], column: str
 ) -> Generator[dict[int, dict[str, str]]]:
-    """_summary_
+    """Find records that are duplicated by the value of a single column
 
     Parameters
     ----------
     records : dict[int, dict[str, str]]
-        _description_
+        (See module docstring for definition)
     column : str
-        _description_
-
-    Returns
-    -------
-    _type_
-        _description_
+        The column to where the duplicated values should be found in
 
     Yields
     ------
     Generator[dict[int, dict[str, str]]]
-        _description_
+        Records where the value in the column have existed more than once
     """
     counter = Counter(r[column] for r in records.values() if r[column])
     return (r for r in records.values() if counter[r[column]] > 1)
