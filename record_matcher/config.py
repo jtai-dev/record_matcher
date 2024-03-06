@@ -2,39 +2,33 @@ from record_matcher.errors import *
 
 
 class MatcherConfig:
-    """Contains configurations for both x_records and y_records and
-    allow for auto-population of configurations based on column names.
-
+    """Contains configurations for both x_records and y_records and allows for automatic population of configurations based on column names.
 
     Attributes
     ----------
-    x_records: dict[int, dict[str,str]]
+    x_records : dict[int, dict[str, str]]
+        Dictionary containing configurations for x_records.
 
-    y_records: dict[int, dict[str,str]]
+    y_records : dict[int, dict[str, str]]
+        Dictionary containing configurations for y_records.
 
-    columns_to_match: ColumnsToMatch(dict)
-        Maps columns in x_records (x_column) to the columns in y_records
-        (y_column).
+    columns_to_match : ColumnsToMatch(dict)
+        A mapping of columns in x_records (x_column) to the corresponding columns in y_records (y_column).
 
-    columns_to_get: ColumnsToGet(dict)
-        Maps columns in y_records (y_column) to an existing column
-        (x_column) or non-existing column in x_records.
+    columns_to_get : ColumnsToGet(dict)
+        A mapping of columns in y_records (y_column) to existing columns in x_records or non-existing columns.
 
-    columns_to_group: ColumnsToGroup(dict)
-        Maps columns in y_records (y_column) to a column in x_records
-        (x_column).
+    columns_to_group : ColumnsToGroup(dict)
+        A mapping of columns in y_records (y_column) to columns in x_records for grouping purposes.
 
-    scorers_by_column: ScorersByColumn(dict)
-        Maps columns in x_records (x_column) to a scorer.
+    scorers_by_column : ScorersByColumn(dict)
+        A mapping of columns in x_records (x_column) to a corresponding scorer.
 
-    thresholds_by_column: ThresholdByColumn(dict)
-        Maps columns in x_records (x_column) to a number that represents
-        a threshold.
+    thresholds_by_column : ThresholdByColumn(dict)
+        A mapping of columns in x_records (x_column) to a threshold value.
 
-    cutoffs_by_column: CutoffsByColumn(dict)
-        Maps columns in x_records (x_column) to a boolean value that
-        represents the cutoff.
-
+    cutoffs_by_column : CutoffsByColumn(dict)
+        A mapping of columns in x_records (x_column) to a boolean value representing the cutoff.
     """
 
     def __init__(self) -> None:

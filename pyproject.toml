@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "record_matcher"
+description = "Finds matches between two sets of records."
+authors = [{ name = "Johanan Tai", email = "jtai.dvlp@gmail.com" },]
+readme = "README.rst"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+version = "1.0.0"
+
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+
+[project.urls]
+GitHub = "https://github.com/jtai-dev/record_matcher"
+

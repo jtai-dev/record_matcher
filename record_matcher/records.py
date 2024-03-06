@@ -15,15 +15,15 @@ eg.
     
         firstname    lastname      country
         ---------    --------    ----------
-    0     Reuben      Garett         USA
-    1     Alicia      Mason          UK
-    2     Jane       van Doe     Netherlands
+    0     Reuben      Miller      USA
+    1     Alicia      Thornton    UK
+    2     Jane        van Doe     Netherlands
     
     will translate to records data structure as shown below:
     
     records = {
-        0: {'firstname': 'Reuben', 'lastname': 'Garett', 'country': 'USA'}
-        1: {'firstname': 'Alicia', 'lastname': 'Mason', 'country': 'UK' }
+        0: {'firstname': 'Reuben', 'lastname': 'Miller', 'country': 'USA'}
+        1: {'firstname': 'Alicia', 'lastname': 'Thornton', 'country': 'UK' }
         2: {'firstname': 'Jane', 'lastname': 'van Doe', 'country': 'Netherlands'}
     }
 
