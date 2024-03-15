@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "record_matcher"
 description = "Finds matches between two sets of records."
 authors = [{ name = "Johanan Tai", email = "jtai.dvlp@gmail.com" },]
-readme = "README.rst"
+readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
 version = "1.0.0"
