@@ -364,7 +364,7 @@ class ScorersByColumn(dict):
     def __setitem__(self, __x: str, scorer_name=None) -> None:
         if __x in self.config.x_columns:
             if scorer_name in ScorersByColumn.SCORERS:
-                super().__setitem__(__x, scorer_name)  # type: ignore
+                super().__setitem__(__x, scorer_name)
             elif scorer_name is None:
                 super().__setitem__(__x, self.default)
             else:
